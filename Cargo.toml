@@ -1,0 +1,19 @@
+[package]
+name = "motion"
+version = "0.1.0"
+authors = ["Greg Zanchelli <zanchelli.greg@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+cairo-rs = "0.8.0"
+glib = "0.9.0"
+gio = { version="0.8.0", features=["v2_50"] } # per configure.ac
+librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
+url = "2"
+json = "0.12.4"
+
+
+[dev-dependencies]
+cairo-rs = { version = "0.8.0", features = ["png", "pdf", "svg"] }
+librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
