@@ -13,3 +13,5 @@ Cargo.lock
 tmp/
 
 .DS_Store
+
+.out/
