@@ -6,6 +6,13 @@ use cairo::{ImageSurface, Format, Context};
 mod motion_renderer;
 use motion_renderer::MotionRenderer;
 
+mod x264_presets;
+
+
+fn clear_canvas(cr: &Context){
+    cr.set_source_rgb(1.0, 1.0, 1.0);
+    cr.paint();
+}
 
 
 fn draw(surface: &ImageSurface, frame: i32, motion_renderer: &MotionRenderer, svg_renderers: &Vec<&librsvg::CairoRenderer>) {
@@ -17,8 +24,13 @@ fn draw(surface: &ImageSurface, frame: i32, motion_renderer: &MotionRenderer, sv
     let width = motion_renderer.width;
     let height =  motion_renderer.height;
 
-    cr.set_source_rgb(1.0, 1.0, 1.0);
-    cr.paint();
+    // cr.set_source_rgb(1.0, 1.0, 1.0);
+    // cr.paint();
+    clear_canvas(&cr);
+    // cr.set_source(grad);
+    // cr.rectangle(0.0, 0.0, width, height);
+    // cr.fill();
+    // cr.paint();
 
     let cx =  width / 2.0;
     let cy = height / 2.0;
@@ -80,29 +92,43 @@ fn draw(surface: &ImageSurface, frame: i32, motion_renderer: &MotionRenderer, sv
 
 
 
+struct MovieArgs<'a> {
+    width: i32,
+    height: i32,
+    framerate: f64,
+    crf: i32,
+    filename: &'a str,
+    duration: f64,
+    preset: &'a str,
+}
 
-
-fn make_cmdline(width: i32, height: i32, framerate: i32) -> String {
+fn make_ffmpeg_command(args: MovieArgs) -> String {
     format!(
-        "ffmpeg -f rawvideo -pix_fmt bgra -s {width}x{height} -i - -pix_fmt yuv420p -r {framerate} -y out/out.mp4",
-        width = width,
-        height = height,
-        framerate = framerate
+        "ffmpeg -f rawvideo -pix_fmt bgra -s {width}x{height} -i - -pix_fmt yuv420p -crf {crf} -preset:v {preset} -r {framerate} -y {filename}",
+        width = args.width,
+        height = args.height,
+        crf = args.crf,
+        preset = args.preset,
+        framerate = args.framerate,
+        filename = args.filename,
     )
 }
 
-fn make_movie(width: i32, height: i32, framerate: i32, frames: i32) {
+
+
+fn make_movie(args: MovieArgs) {
+    let frames = (args.framerate * args.duration) as i32;
 
     let motion_renderer = MotionRenderer::new(
-        f64::from(width),
-        f64::from(height),
-        f64::from(framerate)
+        f64::from(args.width),
+        f64::from(args.height),
+        args.framerate
     );
 
     let mut surface = ImageSurface::create(
         Format::ARgb32, 
-        width, 
-        height
+        args.width, 
+        args.height
     ).expect("Couldn't create surface");
 
     // let mut img_surface = ImageSurface::create_from_png(&mut BufReader::new(File::open("res/ex.png").unwrap())).expect("Couldn't create surface");
@@ -127,14 +153,14 @@ fn make_movie(width: i32, height: i32, framerate: i32, frames: i32) {
     let svg_renderers = vec![r1];
 
     let mut child = Command::new("/bin/sh")
-        .args(&["-c", &make_cmdline(width, height, framerate)])
+        .args(&["-c", &make_ffmpeg_command(args)])
         .stdin(Stdio::piped())
         .spawn()
         .expect("failed to execute child");
     {
         // limited borrow of stdin
         let child_stdin = child.stdin.as_mut().expect("failed to get stdin");
-
+        
         (0..frames).for_each(|frame| {
             draw(&surface, frame, &motion_renderer, &svg_renderers);
 
@@ -148,7 +174,16 @@ fn make_movie(width: i32, height: i32, framerate: i32, frames: i32) {
 
 
 fn main() {
-    make_movie(960, 480, 30, 90);
+    make_movie(MovieArgs {
+        filename: "out/out.mp4", 
+        width: 1280, 
+        height: 720, 
+        framerate: 30.0, 
+        duration: 3.0,
+        crf: 23,
+        preset: x264_presets::ULTRAFAST
+    });
+    // make_movie("out/out.webm", 960, 480, 30, 90);
     // fs::create_dir_all("tmp").unwrap();
 
 
@@ -182,6 +217,8 @@ fn main() {
         
 
     // }
+
+
 
     // let ffmpeg_args = [
     //     // "-f", "image2pipe",

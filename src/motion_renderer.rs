@@ -4,6 +4,8 @@ pub struct MotionRenderer {
     pub height: f64,
     pub fps: f64,
     pub period: f64,
+    pub cx: f64,
+    pub cy: f64
 }
 
 
@@ -13,7 +15,9 @@ impl MotionRenderer {
             width,
             height,
             fps,
-            period: 1.0 / fps
+            period: 1.0 / fps,
+            cx: width / 2.0,
+            cy: height / 2.0
         }
     }
 }
